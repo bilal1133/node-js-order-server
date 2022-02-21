@@ -1,16 +1,35 @@
 const mongoose = require("mongoose");
 
-const orderSchema = new mongoose.Schema({
-  date: {
-    created_at: Date,
+const orderSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    products: [
+      {
+        product_id: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        qty: {
+          type: Number,
+          required: true,
+        },
+        price_atm: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "user",
-    required: true,
-  },
-  order: [{ type: mongoose.Schema.Types.ObjectId, ref: "product" }],
-  amount: Number, // where to put the amount from the products,
-});
+  { timestamps: true }
+);
+
+function arrayLimit(val) {
+  return val.length < 0;
+}
 
 module.exports = mongoose.model("Order", orderSchema);

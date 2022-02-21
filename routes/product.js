@@ -40,13 +40,10 @@ const getProduct = async (req, res, next) => {
 
 // alle producten weergeven
 router.get("/", async (req, res) => {
-  console.log("🍯");
   try {
-    const pro = await Product.find().sort({ name: 1 });
-    console.log("product", pro);
-    res.json(pro);
+    const product = await product.find().sort({ name: 1 });
+    res.json(product);
   } catch (err) {
-    console.log(err);
     res.status(500).send({ success: false, message: err.message });
   }
 });
