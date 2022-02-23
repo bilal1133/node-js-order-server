@@ -22,14 +22,14 @@ const orderSchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
-        deliveryDate: {
-          type: Date,
-          required: true,
-        },
       },
     ],
   },
   { timestamps: true }
 );
+
+function arrayLimit(val) {
+  return val.length < 0;
+}
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -15,8 +15,38 @@ router.post("/", async (req, res) => {
 // Get all orders
 router.get("/", async (req, res) => {
   try {
-    const orders = await Order.find();
+    const orders = await Order.find().populate("user").sort({ fullname: 1 });
     return res.json(orders);
+  } catch (err) {
+    return res.status(500).send({ message: err.message });
+  }
+});
+
+// Find occurrence of product in orders
+router.get("/product-occurrence", async (req, res) => {
+  try {
+    const orders = await Order.find().populate({
+      path: "products",
+      populate: {
+        path: "product_id",
+        model: "Product",
+      },
+    });
+    const ProductOccurences = orders
+      .map((o) => o.products)
+      .flat()
+      .map((order) => ({ name: order.product_id.name, qty: order.qty }))
+      .reduce((prev, current) => {
+        console.log(prev, current);
+        if (prev[current.name]) {
+          prev[current.name] = prev[current.name] + current.qty;
+        } else {
+          prev[current.name] = current.qty;
+        }
+        return prev;
+      }, {});
+
+    return res.send(ProductOccurences);
   } catch (err) {
     return res.status(500).send({ message: err.message });
   }
@@ -50,24 +80,6 @@ router.delete("/:id", async (req, res) => {
   try {
     await Order.deleteOne({ _id: req.params.id });
     return res.send({ message: "Order Deleted" });
-  } catch (err) {
-    return res.status(500).send({ message: err.message });
-  }
-});
-
-// Find occurrence of product in orders
-router.get("/product-occurrence/:id", async (req, res) => {
-  try {
-    const orders = await Order.find(
-      { "products.product_id": req.params.id },
-      { "products.qty": 1, "products.product_id": 1 }
-    );
-    const count = orders
-      .map((o) => o.products)
-      .flat()
-      .filter((o) => o.product_id == req.params.id)
-      .reduce((partialSum, a) => partialSum + a.qty, 0);
-    return res.send({ count });
   } catch (err) {
     return res.status(500).send({ message: err.message });
   }
