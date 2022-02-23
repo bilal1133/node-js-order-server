@@ -26,6 +26,7 @@ const validate = [
 // find info from product by id
 const getProduct = async (req, res, next) => {
   let product;
+
   try {
     product = await Product.findById(req.params.id);
     if (product == null) {
@@ -41,9 +42,10 @@ const getProduct = async (req, res, next) => {
 // alle producten weergeven
 router.get("/", async (req, res) => {
   try {
-    const product = await product.find().sort({ name: 1 });
+    const product = await Product.find().sort({ name: 1 });
     res.json(product);
   } catch (err) {
+    console.log(err);
     res.status(500).send({ success: false, message: err.message });
   }
 });
