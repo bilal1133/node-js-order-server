@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
+const morgan = require('morgan');
 
 const authRoutes = require("./routes/auth");
 const categorie = require("./routes/categorie");
@@ -9,6 +10,7 @@ const information = require("./routes/information");
 const newsFeed = require("./routes/newsFeed");
 const order = require("./routes/order");
 
+app.use(morgan('dev', 'immediate'));
 app.use(express.json());
 
 app.get("/", (req, res) => {

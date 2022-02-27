@@ -38,11 +38,12 @@ const generateToken = (user) => {
       fullName: user.fullName,
       role: user.role,
     },
-    "SUPERSECRET123"
+    process.env.JWT_PRIVATE_KEY
   );
 };
 
 router.post("/register", validate, async (req, res) => {
+  console.log("hey");
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).send({ errors: errors.array() });

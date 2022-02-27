@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../models/order");
+const auth = require('../Middlewares/auth');
 
 // Create an order
 router.post("/", async (req, res) => {
@@ -23,7 +24,7 @@ router.get("/", async (req, res) => {
 });
 
 // Find occurrence of product in orders
-router.get("/product-occurrence", async (req, res) => {
+router.get("/product-occurrence", auth, async (req, res) => {
   try {
     const orders = await Order.find().populate({
       path: "products",
@@ -37,7 +38,6 @@ router.get("/product-occurrence", async (req, res) => {
       .flat()
       .map((order) => ({ name: order.product_id.name, qty: order.qty }))
       .reduce((prev, current) => {
-        console.log(prev, current);
         if (prev[current.name]) {
           prev[current.name] = prev[current.name] + current.qty;
         } else {
