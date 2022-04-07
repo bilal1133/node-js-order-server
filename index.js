@@ -40,6 +40,6 @@ mongoose
     `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.mhhag.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
   )
   .then(() =>
-    app.listen(port, () => console.log(`Server is running at Port ${port}`))
+    app.listen(port, () => console.log(`🔥 Server is running at Port ${port}`))
   )
   .catch((err) => console.log(err));
