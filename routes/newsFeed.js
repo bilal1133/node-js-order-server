@@ -3,14 +3,14 @@ const { check, validationResult } = require("express-validator");
 const router = express.Router();
 const NewsFeed = require("../models/newsFeed");
 
-// validatie
+// Validatie
 const validate = [
   check("newsFeed")
     .isLength({ min: 3 })
     .withMessage("Name is required, must be 3 characters long"),
 ];
 
-// find info from newsFeed by id
+// Search newsfeed with ID
 const getNewsFeed = async (req, res, next) => {
   let newsFeed;
   try {
@@ -25,7 +25,7 @@ const getNewsFeed = async (req, res, next) => {
   next();
 };
 
-// Alle newsFeed weergeven
+// All newsfeeds
 router.get("/", async (req, res) => {
   try {
     const newsFeed = await NewsFeed.find();
@@ -35,18 +35,18 @@ router.get("/", async (req, res) => {
   }
 });
 
-// geef information met id
+// Newsfeed with ID
 router.get("/:id", getNewsFeed, (req, res) => {
   res.json(res.newsFeed);
 });
 
-// Toevoegen van newsFeed
+// Post a newsFeed
 router.post("/", validate, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).send({ errors: errors.array() });
   }
-  // Zoek of newsFeed al bestaat in de databank
+  // Search if newsfeed exist in database
   const newsFeedExist = await NewsFeed.findOne({ info: req.body.info });
   if (newsFeedExist) {
     return res
@@ -64,7 +64,7 @@ router.post("/", validate, async (req, res) => {
   }
 });
 
-// Aanpassen van newsFeed
+// Put a newsFeed
 router.put("/:id", getNewsFeed, async (req, res) => {
   try {
     const putnewsFeed = await NewsFeed.findByIdAndUpdate(req.params.id, {
@@ -77,7 +77,7 @@ router.put("/:id", getNewsFeed, async (req, res) => {
   }
 });
 
-// Verwijder newsFeed
+// Delete newsFeed
 router.delete("/:id", getNewsFeed, async (req, res) => {
   try {
     await res.newsFeed.remove();

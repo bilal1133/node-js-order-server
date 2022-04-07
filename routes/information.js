@@ -3,12 +3,12 @@ const { check, validationResult } = require("express-validator");
 const router = express.Router();
 const Information = require("../models/information");
 
-// validatie
+// Validatie
 const validate = [
   check("information").isLength({ min: 15 }).withMessage("Info is required"),
 ];
 
-// find info from information by id
+// Search information with ID
 const getInformation = async (req, res, next) => {
   let information;
   try {
@@ -23,7 +23,7 @@ const getInformation = async (req, res, next) => {
   next();
 };
 
-// alle information weergeven
+// All informations
 router.get("/", async (req, res) => {
   try {
     const information = await Information.find();
@@ -33,12 +33,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// geef information met id
+// Information with ID
 router.get("/:id", getInformation, (req, res) => {
   res.json(res.information);
 });
 
-// Toevoegen van een informatie
+// Post an information
 router.post("/", validate, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -63,7 +63,7 @@ router.post("/", validate, async (req, res) => {
   }
 });
 
-// Aanpassen van de information
+// Put an information
 router.put("/:id", getInformation, async (req, res) => {
   try {
     const putInformation = await Information.findByIdAndUpdate(req.params.id, {
@@ -76,7 +76,7 @@ router.put("/:id", getInformation, async (req, res) => {
   }
 });
 
-// Verwijder van de informatie
+// Delete an information
 router.delete("/:id", getInformation, async (req, res) => {
   try {
     await res.information.remove();

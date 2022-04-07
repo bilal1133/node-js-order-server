@@ -7,18 +7,18 @@ const router = express.Router();
 
 const User = require("../models/user");
 
-// register validatie
+// Register validation
 const validate = [
   check("fullName")
     .isLength({ min: 2 })
     .withMessage("Fullname is required, must be 2 characters long"),
   check("email").isEmail().withMessage("Please provide a valid email"),
   check("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be least 6 characters"),
+    .isLength({ min: 4 })
+    .withMessage("Password must be least 4 characters"),
 ];
 
-// login validatie
+// Login validation
 const loginValidation = [
   check("email").isEmail().withMessage("Please provide a valid email"),
   check("password")
@@ -26,7 +26,7 @@ const loginValidation = [
     .withMessage("Password must be least 6 characters"),
 ];
 
-// Token aanmaken voor user client
+// Token for user (client)
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -42,20 +42,20 @@ const generateToken = (user) => {
   );
 };
 
+// Post a register
 router.post("/register", validate, async (req, res) => {
-  console.log("hey");
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).send({ errors: errors.array() });
   }
-  //Zoek of email al bestaat in de databank
+  // Search if e-mail exist
   const userExist = await User.findOne({ email: req.body.email });
   if (userExist) {
     return res
       .status(400)
-      .send({ success: false, message: "Email already exist" });
+      .send({ success: false, message: "Email is reeds in gebruik." });
   }
-  //Wachtwoord encypteren
+  // Passwoord encyption
   const salt = await bcrypt.genSalt();
   const hasPassword = await bcrypt.hash(req.body.password, salt);
 
@@ -86,25 +86,27 @@ router.post("/register", validate, async (req, res) => {
   }
 });
 
+// Post login
 router.post("/login", loginValidation, async (req, res) => {
-  // validatie
+  // validation
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).send({ errors: errors.array() });
   }
-  // check of email bestaat in de databank
+  // Check if e-mail exsist
   const user = await User.findOne({ email: req.body.email });
   if (!user)
     return res
       .status(404)
-      .send({ succes: false, message: "User not registered" });
-  // check of paswoord is correct met de databank
+      .send({ succes: false, message: "Gebruiker niet geregistreerd." });
+  // check id password is correct
   const validPassword = await bcrypt.compare(req.body.password, user.password);
 
   if (!validPassword) {
-    return res
-      .status(404)
-      .send({ success: false, message: "Email of password not correct" });
+    return res.status(404).send({
+      success: false,
+      message: "E-mailadres of wachtwoord niet correct",
+    });
   }
 
   const token = generateToken(user);

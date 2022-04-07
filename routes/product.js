@@ -2,8 +2,15 @@ const express = require("express");
 const { check, validationResult } = require("express-validator");
 const router = express.Router();
 const Product = require("../models/product");
+const Category = require("../models/categorie");
+const multer = require("multer");
+const uploadImage = require("../utils/uploadImage");
 
-// validatie
+// Upload options
+const storage = multer.memoryStorage();
+const uploadOptions = multer({ storage: storage });
+
+// Validation
 const validate = [
   check("name")
     .isLength({ min: 3 })
@@ -23,12 +30,12 @@ const validate = [
     .withMessage("categorie is required, categorie name not found/correct"),
 ];
 
-// find info from product by id
+// Find info from product by id
 const getProduct = async (req, res, next) => {
   let product;
 
   try {
-    product = await Product.findById(req.params.id);
+    product = await Product.findById(req.params.id).populate("categorie");
     if (product == null) {
       return res.status(404).send({ message: "Cannot find product" });
     }
@@ -39,29 +46,46 @@ const getProduct = async (req, res, next) => {
   next();
 };
 
-// alle producten weergeven
+// All products
 router.get("/", async (req, res) => {
+  const { categorie } = req.query;
   try {
-    const product = await Product.find().sort({ name: 1 });
-    res.json(product);
+    let products;
+    if (categorie) {
+      products = await Product.find({ categorie: categorie }).sort({
+        name: 1,
+      });
+    } else {
+      products = await Product.find().sort({ name: 1 });
+    }
+    res.json(products);
   } catch (err) {
     console.log(err);
     res.status(500).send({ success: false, message: err.message });
   }
 });
 
-// geef product met id
+// Product with ID
 router.get("/:id", getProduct, (req, res) => {
   res.json(res.product);
 });
 
-// Toevoegen van een product
-router.post("/", validate, async (req, res) => {
+// Post product
+router.post("/", uploadOptions.single("image"), async (req, res) => {
   const errors = validationResult(req);
+  if (!req.file) {
+    return res.status(400).send({ errors: "Image is Required" });
+  } else if (!req.body.name) {
+    return res.status(400).send({ errors: "Name is Required" });
+  } else if (!req.body.information) {
+    return res.status(400).send({ errors: "Information is Required" });
+  } else if (!req.body.price) {
+    return res.status(400).send({ errors: "price is Required" });
+  }
   if (!errors.isEmpty()) {
     return res.status(400).send({ success: false, errors: errors.array() });
   }
-  // Zoek of product al bestaat in de databank
+  // Search if product exist in database
   const productExist = await Product.findOne({
     success: true,
     name: req.body.name,
@@ -71,39 +95,92 @@ router.post("/", validate, async (req, res) => {
       .status(400)
       .send({ success: false, message: "product already exist" });
   }
+  // Search if category exist
+  const categoryExists = await Category.findOne({
+    success: true,
+    _id: req.body.categorie,
+  });
+  if (!categoryExists) {
+    return res
+      .status(400)
+      .send({ success: false, message: "Please choose Valid Categorie." });
+  }
+
+  // Filename from upload picture
+  const url = await uploadImage(req.file);
+  // try {
+  // } catch (error) {
+  //   console.log(error);
+  //   return res.status(400).send();
+  // }
+  //pad where the pictures are stored
+
   const product = new Product({
     name: req.body.name.replace(/\w/, (c) => c.toUpperCase()), // eerste letter uppercase,
-    image: req.body.image,
+    image: url,
     price: req.body.price,
     information: req.body.information,
     categorie: req.body.categorie,
   });
+
   try {
     const newproduct = await product.save();
-    res.status(201).send(newproduct);
+    const populatedProd = await Product.findById(newproduct._id).populate(
+      "categorie"
+    );
+    res.status(201).send(populatedProd);
   } catch (err) {
     res.status(400).send({ success: false, err });
   }
 });
 
-// Aanpassen van een product
-router.put("/:id", getProduct, async (req, res) => {
-  try {
-    const putproduct = await product.findByIdAndUpdate(req.params.id, {
-      name: req.body.name,
-      image: req.body.image,
-      price: req.body.price,
-      information: req.body.information,
-      categorie: req.body.categorie,
-    });
-    // Send response in here
-    res.send(putproduct);
-  } catch (err) {
-    res.send(400).send({ success: false, message: err.message });
-  }
-});
+// Put of a product
+router.put(
+  "/:id",
+  uploadOptions.single("image"),
+  getProduct,
+  async (req, res) => {
+    const errors = validationResult(req);
+    const { name, information, price, categorie } = req.body;
 
-// Verwijder product
+    if (!errors.isEmpty()) {
+      return res.status(400).send({ success: false, errors: errors.array() });
+    }
+    if (categorie) {
+      // Search if category exist
+      const categoryExists = await Category.findOne({
+        success: true,
+        _id: categorie,
+      });
+      if (!categoryExists) {
+        return res
+          .status(400)
+          .send({ success: false, message: "Please choose Valid Categorie." });
+      }
+    }
+    let url;
+    // Filename from upload picture
+    if (req.file) {
+      url = await uploadImage(req.file);
+    }
+
+    try {
+      const newproduct = await Product.findByIdAndUpdate(req.params.id, {
+        ...req.body,
+        image: url || res.product.image,
+      });
+      const populatedProd = await Product.findById(newproduct._id).populate(
+        "categorie"
+      );
+      res.status(201).send(populatedProd);
+    } catch (err) {
+      console.log("----", err);
+      res.status(400).send({ success: false, err });
+    }
+  }
+);
+
+// Delete of a product
 router.delete("/:id", getProduct, async (req, res) => {
   try {
     await res.product.remove();

@@ -24,12 +24,11 @@ const orderSchema = new mongoose.Schema(
         },
       },
     ],
+    totalPrice: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );
-
-function arrayLimit(val) {
-  return val.length < 0;
-}
 
 module.exports = mongoose.model("Order", orderSchema);

@@ -1,9 +1,17 @@
 const express = require("express");
+const multer = require("multer");
+const AWS = require("aws-sdk");
+const Jimp = require("jimp");
 const { check, validationResult } = require("express-validator");
 const router = express.Router();
 const Categorie = require("../models/categorie");
+const uploadImage = require("../utils/uploadImage");
 
-// validatie
+// Upload options
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// Validation
 const validate = [
   check("name")
     .isLength({ min: 3 })
@@ -13,7 +21,7 @@ const validate = [
     .withMessage("image is required, must be 15 characters long"),
 ];
 
-// find info from categorie by id
+// Search category with ID
 const getCategorie = async (req, res, next) => {
   let categorie;
   try {
@@ -28,7 +36,7 @@ const getCategorie = async (req, res, next) => {
   next();
 };
 
-// alle categorieën weergeven
+// All categories
 router.get("/", async (req, res) => {
   try {
     const categorie = await Categorie.find().sort({ name: 1 });
@@ -38,18 +46,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-// geef categorie met id
+// Category with ID
 router.get("/:id", getCategorie, (req, res) => {
   res.json(res.categorie);
 });
 
-// Toevoegen van een categorie
-router.post("/", validate, async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).send({ errors: errors.array() });
+// Post a categoery
+router.post("/", upload.single("image"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send({ errors: "Image is Required" });
+  } else if (!req.body.name) {
+    return res.status(400).send({ errors: "Name is Required" });
   }
-  // Zoek of categorie al bestaat in de databank
+
+  const url = await uploadImage(req.file);
   const categorieExist = await Categorie.findOne({ name: req.body.name });
   if (categorieExist) {
     return res
@@ -58,32 +68,40 @@ router.post("/", validate, async (req, res) => {
   }
   const categorie = new Categorie({
     name: req.body.name.replace(/\w/, (c) => c.toUpperCase()), // eerste letter uppercase
-    image: req.body.image,
+    image: url,
   });
+
   try {
     const newCategorie = await categorie.save();
     res.status(201).send(newCategorie);
   } catch (err) {
+    console.log(err);
     res.status(400).send({ success: false, err });
   }
 });
 
-// Aanpassen van een categorie
-router.put("/:id", getCategorie, async (req, res) => {
+// Put a category
+router.put("/:id", getCategorie, upload.single("image"), async (req, res) => {
+  let url;
+  if (req.file) {
+    url = await uploadImage(req.file);
+  }
   try {
     const putCategorie = await Categorie.findByIdAndUpdate(req.params.id, {
-      name: req.body.name,
-      image: req.body.image,
+      ...req.body,
+      image: url || res.categorie.image,
     });
     // Send response in here
-    res.send(putCategorie);
+
+    const catData = await Categorie.findById(req.params.id);
+    res.send(catData);
   } catch (err) {
-    console.error(err.message);
+    console.error("-=-=-=-==-", err.message);
     res.send(400).send({ message: err.message });
   }
 });
 
-// Verwijder categorie
+// Delete a category
 router.delete("/:id", getCategorie, async (req, res) => {
   try {
     await res.categorie.remove();

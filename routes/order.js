@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../models/order");
-const auth = require('../Middlewares/auth');
+const auth = require("../Middlewares/auth");
 
 // Create an order
 router.post("/", async (req, res) => {
@@ -55,7 +55,15 @@ router.get("/product-occurrence", auth, async (req, res) => {
 // Get order by id
 router.get("/:id", async (req, res) => {
   try {
-    const orders = await Order.findOne({ _id: req.params.id });
+    const orders = await Order.findOne({ _id: req.params.id })
+      .populate("user")
+      .populate({
+        path: "products",
+        populate: {
+          path: "product_id",
+          model: "Product",
+        },
+      });
     return res.json(orders);
   } catch (err) {
     return res.status(500).send({ message: err.message });
